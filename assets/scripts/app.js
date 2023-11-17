@@ -4,6 +4,9 @@ const STRONG_ATTACK_VALUE = 17;
 const MONSTER_ATTACK_VALUE = 15;
 const HEAL_VALUE = 20;
 
+let varijabla = 3;
+
+//Codebook
 const MODE_ATTACK = "ATTACK"; //const MODE_ATTACK = 0
 const MODE_STRONG_ATTACK = "STRONG_ATTACK"; //const MODE_STRONG_ATTACK = 1
 
@@ -36,6 +39,10 @@ logBtn.addEventListener("click", printLogHandler);
 
 //Helper functions
 function processUserInput(value) {
+
+  //ako aplikacija radi s negativnim healthom
+  // return value || 100;
+
   if (isNaN(value) || value <= 0) {
     console.log("User entered an invalid value, we defaluted to 100");
     return 100;
@@ -46,50 +53,96 @@ function processUserInput(value) {
   //u suprotnom vratiti ono sto je korisnik unio
 }
 
-//sta se desilo
-//vrijednost
-//meta desavanja
-//health igraca
-//health cudovista
-
 function writeToLog(ev, val) {
-  let logEntry;
+  let logEntry = {
+    event : null,
+    target: null,
+    value: val,
+    playerHealth : currentPlayerHealth,
+    monsterHealth : currentMonsterHealth
+  };
 
-  if (ev === LOG_EVENT_ATTACK) {
-    logEntry = {
-      event: LOG_EVENT_ATTACK,
-      target: "MONSTER",
-      value: val,
-      playerHealth: currentPlayerHealth,
-      monsterHealth: currentMonsterHealth
-    };
-  } 
-  else if (ev === LOG_EVENT_STRONG_ATTACK) {
-    logEntry = {
-      event: LOG_EVENT_STRONG_ATTACK,
-      target: "MONSTER",
-      value: val,
-      playerHealth: currentPlayerHealth,
-      monsterHealth: currentMonsterHealth
-    };
+
+
+  switch(ev)
+  {
+    case LOG_EVENT_ATTACK : 
+      logEntry.event = LOG_EVENT_ATTACK;
+      logEntry.target = "MONSTER";
+      break;
+    case LOG_EVENT_STRONG_ATTACK :
+      logEntry.event = LOG_EVENT_STRONG_ATTACK;
+      logEntry.target = "MONSTER";
+      break;
+    case LOG_EVENT_MONSTER_ATTACK :
+      logEntry.event = LOG_EVENT_MONSTER_ATTACK;
+      logEntry.target = "PLAYER";
+      break;
+    case LOG_EVENT_HEAL:
+      logEntry.event = LOG_EVENT_HEAL;
+      logEntry.target = "PLAYER";
+      break;
+    case LOG_EVENT_GAME_OVER: 
+      logEntry.event = LOG_EVENT_GAME_OVER;
+      break;
+    case LOG_EVENT_ERROR :
+      logEntry.event= LOG_EVENT_ERROR;
+      break;
+    default : 
+    logEntry.event = LOG_EVENT_ERROR;
+    logEntry.value = "Wrong parameter for writeToLog function!";
   }
-  // dodati to da je napadnut igrac od strane cudovista
+
+  // if (ev === LOG_EVENT_ATTACK) {
+  //   logEntry.event = LOG_EVENT_ATTACK;
+  //   logEntry.target = "MONSTER";
+  // } 
+  // else if (ev === LOG_EVENT_STRONG_ATTACK) {
+  //   logEntry.event = LOG_EVENT_STRONG_ATTACK;
+  //   logEntry.target = "MONSTER";
+  // }
+  // else if (ev === LOG_EVENT_MONSTER_ATTACK)
+  // {
+  //     logEntry.event = LOG_EVENT_MONSTER_ATTACK;
+  //     logEntry.target = "PLAYER";
+  // }
+  // else if (ev === LOG_EVENT_GAME_OVER)
+  // {
+  //   logEntry.event = LOG_EVENT_GAME_OVER;
+  // }
+  // else if (ev === LOG_EVENT_HEAL)
+  // {
+  //     logEntry.event = LOG_EVENT_HEAL;
+  //     logEntry.target = "PLAYER";
+  // }
+  // else if(ev === LOG_EVENT_ERROR)
+  // {
+  //   logEntry.event= LOG_EVENT_ERROR;
+  // }
+  // else{
+  //   logEntry.event = LOG_EVENT_ERROR;
+  //   logEntry.value = "Wrong parameter for writeToLog function!";
+  // }
 
   battleLog.push(logEntry);
 }
 
 function attackMonster(mode) {
-  let maxDamage;
-  let logMode;
-  if (mode === MODE_ATTACK) {
-    maxDamage = ATTACK_VALUE;
-    logMode = LOG_EVENT_ATTACK;
-  } else if (mode === MODE_STRONG_ATTACK) {
-    maxDamage = STRONG_ATTACK_VALUE;
-    logMode = LOG_EVENT_STRONG_ATTACK;
-  } else {
-    console.log("Wrong attackMonster function parameters!");
-    logMode = LOG_EVENT_ERROR;
+  const errorMessage = "Wrong attackMonster function parameters!"
+  let maxDamage = (mode === MODE_ATTACK) ? ATTACK_VALUE : STRONG_ATTACK_VALUE;
+  let logMode = (mode === MODE_ATTACK) ? LOG_EVENT_ATTACK : (mode === MODE_STRONG_ATTACK) ? LOG_EVENT_STRONG_ATTACK : LOG_EVENT_ERROR;
+  
+  // if (mode === MODE_ATTACK) {
+  //   maxDamage = ATTACK_VALUE;
+  //   logMode = LOG_EVENT_ATTACK;
+  // } else if (mode === MODE_STRONG_ATTACK) {
+  //   maxDamage = STRONG_ATTACK_VALUE;
+  //   logMode = LOG_EVENT_STRONG_ATTACK;
+  // } 
+  
+  if (mode !== MODE_ATTACK && mode != MODE_STRONG_ATTACK){
+    console.log(errorMessage);
+    writeToLog(logMode, errorMessage);
     return;
   }
   const damageDealt = dealMonsterDamage(maxDamage);
@@ -100,8 +153,11 @@ function attackMonster(mode) {
 
 function endRound() {
   const initialPlayerHealth = currentPlayerHealth;
-  currentPlayerHealth -= dealPlayerDamage(MONSTER_ATTACK_VALUE);
-  //pozvati writeToLog i dodati to da je napadnut igrac od strane cudovista
+  const monsterDamageDealt = dealPlayerDamage(MONSTER_ATTACK_VALUE);
+  currentPlayerHealth -= monsterDamageDealt;
+  
+  writeToLog(LOG_EVENT_MONSTER_ATTACK, monsterDamageDealt);
+
   if (currentPlayerHealth <= 0 && hasBonusLife) {
     hasBonusLife = false;
     removeBonusLife();
@@ -112,12 +168,12 @@ function endRound() {
 
   if (currentMonsterHealth <= 0 && currentPlayerHealth > 0) {
     alert("You won!");
-    // dodati event da je game over, value igrac pobjedio -- nema targeta
+    writeToLog(LOG_EVENT_GAME_OVER, "Player has won!");
   } else if (currentPlayerHealth <= 0 && currentMonsterHealth > 0) {
     alert("You lost!");
-    // dodati event da je game over, value cudoviste pobjedilo --nema targeta
+    writeToLog(LOG_EVENT_GAME_OVER, "Monster has won!");
   } else if (currentPlayerHealth < 0 && currentMonsterHealth <= 0) {
-    // dodati event da je game over, rezultat je izjednacen -- nema targeta
+    writeToLog(LOG_EVENT_GAME_OVER, "It's a draw!");
     alert("DRAW!");
   }
 
@@ -144,15 +200,17 @@ function strongAttackHandler() {
 function healPlayerHandler() {
   let healValue;
   // if(currentPlayerHealth >= chosenMaxLife - HEAL_VALUE)
-  if (currentPlayerHealth + HEAL_VALUE >= chosenMaxLife) {
-    healValue = chosenMaxLife - HEAL_VALUE;
+  if (currentPlayerHealth + HEAL_VALUE > chosenMaxLife) {
+    healValue = chosenMaxLife - currentPlayerHealth;
   } else {
     healValue = HEAL_VALUE;
   }
 
   increasePlayerHealth(healValue);
   currentPlayerHealth += healValue;
-  // dodati to da se igrac healao u log i za koliko
+  
+  writeToLog(LOG_EVENT_HEAL, healValue);
+
   endRound();
 }
 
