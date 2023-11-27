@@ -4,8 +4,6 @@ const STRONG_ATTACK_VALUE = 17;
 const MONSTER_ATTACK_VALUE = 15;
 const HEAL_VALUE = 20;
 
-let varijabla = 3;
-
 //Codebook
 const MODE_ATTACK = "ATTACK"; //const MODE_ATTACK = 0
 const MODE_STRONG_ATTACK = "STRONG_ATTACK"; //const MODE_STRONG_ATTACK = 1
@@ -215,5 +213,12 @@ function healPlayerHandler() {
 }
 
 function printLogHandler() {
-  console.log(battleLog);
+  for(const log of battleLog)
+  {
+    for(const key in log)
+    {
+       console.log(`${key}: ${log[key]}`)
+    }
+    console.log("----------------")
+  }
 }
